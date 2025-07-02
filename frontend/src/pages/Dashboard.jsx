@@ -24,7 +24,7 @@ export default function Dashboard() {
         );
         setBalance(resp.data.balance); // assuming resp.data.User contains the array
       } catch (err) {
-        console.error("Error fetching users:", err);
+        console.error("Error fetching the users:", err);
       }
     };
 

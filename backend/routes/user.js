@@ -7,14 +7,31 @@ const JWT_SECRET = require("../config");
 const bcrypt = require("bcrypt");
 const authMiddleware = require("../middlewares/index.middleware.js");
 userRouter.get("/", authMiddleware, async (req, res) => {
-  const user = await User.find({});
-  console.log(user.username);
+  const filter = req.query.filter || "";
+  const user = await User.find({
+    _id: { $ne: req.userId },
+    $or: [
+      {
+        firstName: {
+          $regex: filter,
+          $options: "i",
+        },
+      },
+      {
+        lastName: {
+          $regex: filter,
+          $options: "i",
+        },
+      },
+    ],
+  });
 
   return res.json({
     User: user.map((user) => ({
       firstName: user.firstName,
       lastName: user.lastName,
       username: user.username,
+      userid: user._id,
     })),
   });
 });
@@ -49,13 +66,14 @@ userRouter.post("/signup", async (req, res) => {
   return res.json({
     msg: " User Successfully created",
     token: token,
+    username: body.username,
   });
 });
 const signinSchema = zod.object({
   username: zod.string(),
   password: zod.string(),
 });
-userRouter.post("/signin", authMiddleware, async (req, res) => {
+userRouter.post("/signin", async (req, res) => {
   const body = req.body;
   const { success } = signinSchema.safeParse(req.body);
   if (!success) {
@@ -71,7 +89,12 @@ userRouter.post("/signin", authMiddleware, async (req, res) => {
   }
   const pass = await bcrypt.hash(body.password, user.salt);
   if (pass === user.password) {
-    return res.status(200).json({ msg: "signed in successfully" });
+    const token = jwt.sign({ userid: user._id }, JWT_SECRET);
+    return res.status(200).json({
+      msg: "signed in successfully",
+      token: token,
+      username: body.username,
+    });
   } else return res.status(401).json({ msg: "Incorrect password" });
 });
 

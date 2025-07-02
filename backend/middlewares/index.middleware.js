@@ -18,7 +18,9 @@ const authMiddleware = async (req, res, next) => {
       .json({ msg: "user not found with corresponding token" });
   }
 
-  if (req.body.username == fuser.username) {
+  const incomingUsername =
+    req.method === "GET" ? req.query.username : req.body.username;
+  if (incomingUsername == fuser.username) {
     console.log("control reached here");
     req.userId = decoded.userid;
     next();
